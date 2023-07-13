@@ -1,8 +1,8 @@
-"""Create baseline migration
+"""Create basline tables
 
-Revision ID: 5f94419795ba
+Revision ID: 22b82da2e2f2
 Revises: 
-Create Date: 2023-07-12 00:29:25.124892
+Create Date: 2023-07-12 21:15:01.504095
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '5f94419795ba'
+revision = '22b82da2e2f2'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -30,8 +30,8 @@ def upgrade() -> None:
     op.create_index(op.f('ix_passport_offices_po_code'), 'passport_offices', ['po_code'], unique=True)
     op.create_table('users',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('firstName', sa.String(length=50), nullable=True),
-    sa.Column('lastName', sa.String(length=50), nullable=True),
+    sa.Column('first_name', sa.String(length=50), nullable=True),
+    sa.Column('last_name', sa.String(length=50), nullable=True),
     sa.Column('email', sa.String(length=50), nullable=True),
     sa.Column('is_email_verified', sa.Boolean(), nullable=True),
     sa.Column('hashed_password', sa.String(length=100), nullable=True),
@@ -45,17 +45,17 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('arn', sa.String(length=30), nullable=True),
     sa.Column('user_id', sa.Integer(), nullable=True),
-    sa.Column('firstName', sa.String(length=50), nullable=True),
-    sa.Column('lastName', sa.String(length=50), nullable=True),
+    sa.Column('first_name', sa.String(length=50), nullable=True),
+    sa.Column('last_name', sa.String(length=50), nullable=True),
     sa.Column('gender', sa.String(length=20), nullable=True),
     sa.Column('email', sa.String(length=50), nullable=True),
-    sa.Column('mobileNumber', sa.String(length=20), nullable=True),
-    sa.Column('submittedAt', sa.Date(), nullable=True),
+    sa.Column('mobile_number', sa.String(length=20), nullable=True),
+    sa.Column('submitted_at', sa.Date(), nullable=True),
     sa.Column('name', sa.String(length=40), nullable=True),
     sa.Column('status', sa.String(length=30), nullable=True),
-    sa.Column('applicationType', sa.String(length=20), nullable=True),
-    sa.Column('schemeType', sa.String(length=20), nullable=True),
-    sa.Column('bookletType', sa.String(length=20), nullable=True),
+    sa.Column('application_type', sa.String(length=20), nullable=True),
+    sa.Column('scheme_type', sa.String(length=20), nullable=True),
+    sa.Column('booklet_type', sa.String(length=20), nullable=True),
     sa.Column('fee', sa.Float(precision=2), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -76,21 +76,21 @@ def upgrade() -> None:
     op.create_index(op.f('ix_appointment_schedules_scheme_type'), 'appointment_schedules', ['scheme_type'], unique=False)
     op.create_table('applicant_addresses',
     sa.Column('arn', sa.String(length=30), nullable=False),
-    sa.Column('houseStreet', sa.String(length=50), nullable=True),
-    sa.Column('cityName', sa.String(length=50), nullable=True),
-    sa.Column('pinCode', sa.String(length=20), nullable=True),
+    sa.Column('house_treet', sa.String(length=50), nullable=True),
+    sa.Column('city_ame', sa.String(length=50), nullable=True),
+    sa.Column('pin_code', sa.String(length=20), nullable=True),
     sa.Column('state', sa.String(length=30), nullable=True),
     sa.Column('district', sa.String(length=30), nullable=True),
-    sa.Column('policeStation', sa.String(length=30), nullable=True),
+    sa.Column('police_station', sa.String(length=30), nullable=True),
     sa.ForeignKeyConstraint(['arn'], ['applications.arn'], ),
     sa.PrimaryKeyConstraint('arn')
     )
     op.create_table('applicant_family',
     sa.Column('arn', sa.String(length=30), nullable=False),
-    sa.Column('fatherNme', sa.String(length=50), nullable=True),
-    sa.Column('motherName', sa.String(length=50), nullable=True),
-    sa.Column('legalGuardianName', sa.String(length=50), nullable=True),
-    sa.Column('spouseName', sa.String(length=50), nullable=True),
+    sa.Column('father_name', sa.String(length=50), nullable=True),
+    sa.Column('mother_name', sa.String(length=50), nullable=True),
+    sa.Column('legal_guardian_name', sa.String(length=50), nullable=True),
+    sa.Column('spouse_name', sa.String(length=50), nullable=True),
     sa.ForeignKeyConstraint(['arn'], ['applications.arn'], ),
     sa.PrimaryKeyConstraint('arn')
     )
@@ -107,9 +107,9 @@ def upgrade() -> None:
     op.create_index(op.f('ix_appointments_id'), 'appointments', ['id'], unique=False)
     op.create_table('prev_psp_details',
     sa.Column('arn', sa.String(length=30), nullable=False),
-    sa.Column('isIdentityCertHeld', sa.Boolean(), nullable=True),
-    sa.Column('isDiplomaticPassHeld', sa.Boolean(), nullable=True),
-    sa.Column('appliedPspBefore', sa.Boolean(), nullable=True),
+    sa.Column('is_identity_cert_held', sa.Boolean(), nullable=True),
+    sa.Column('is_diplomatic_psp_held', sa.Boolean(), nullable=True),
+    sa.Column('applied_psp_before', sa.Boolean(), nullable=True),
     sa.ForeignKeyConstraint(['arn'], ['applications.arn'], ),
     sa.PrimaryKeyConstraint('arn')
     )

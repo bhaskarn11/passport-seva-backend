@@ -5,7 +5,7 @@ from settings import get_settings
 
 DATABASE_URI = get_settings().database_uri
 
-engine = create_engine(DATABASE_URI, connect_args={'check_same_thread': False})
+engine = create_engine(DATABASE_URI)
 
 Base = declarative_base()
 

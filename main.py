@@ -1,11 +1,63 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from settings import get_settings
+from services import application_service, user_service, appointment_service, rpo_service
+from schemas import CustomHTTPException
+from datetime import datetime
 
 config = get_settings()
 
-app = FastAPI(version=config.version, title=config.app_name)
+app = FastAPI(version=config.version, title=config.app_name, description=config.app_description)
 
 
-@app.get("/")
-def home():
-    return {"hello": "world"}
+origins = [
+    'http://localhost:3000',
+    'https://passportseva-demo.vercel.app'
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
+
+app.include_router(
+    user_service.router,
+    prefix="/users",
+    tags=['User Service']
+)
+
+app.include_router(
+    application_service.router,
+    prefix="/applications",
+    tags=['Applications Service']
+)
+
+app.include_router(
+    appointment_service.router,
+    prefix="/appointments",
+    tags=['Appointment Service']
+)
+
+app.include_router(
+    rpo_service.router,
+    prefix="/rpo",
+    tags=['RPO Service']
+)
+
+
+# Custom Exception Handler
+
+@app.exception_handler(CustomHTTPException)
+def custom_error_handler(request: Request, exc: CustomHTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "detail": exc.detail,
+            "timestamp": datetime.utcnow().strftime("%d/%m/%Y, %H:%M:%S %z")
+        }
+    )
