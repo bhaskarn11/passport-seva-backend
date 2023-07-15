@@ -1,17 +1,12 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from schemas.appointment import CreateAppSlots, PassportOfficeSchema
+from schemas.user import CreateUser
 from models import PassportOffice, AppointmentSchedule
 from dependencies import get_db
-
+from sqlalchemy.dialects.mysql import insert
 
 router = APIRouter()
-
-
-@router.get("/appointments/availability")
-def get_appointment_slots(po_code: str, limit: int = 20, db: Session = Depends(get_db)):
-    slots = db.query(AppointmentSchedule).where(AppointmentSchedule.po_code == po_code).all()
-    return slots
 
 
 @router.get("/psp-offices")
@@ -22,25 +17,35 @@ def get_passport_offices(rpo_name: str, db: Session = Depends(get_db)):
 
 @router.post("/psp-offices")
 def add_passport_offices(req: list[PassportOfficeSchema], db: Session = Depends(get_db)):
-    psks = []
+    offices = []
 
     for item in req:
-        psks.append(PassportOffice(**item.model_dump()))
+        offices.append(PassportOffice(**item.model_dump()))
 
-    db.bulk_save_objects(psks)
+    db.bulk_save_objects(offices)
     db.commit()
 
-    return psks
+    return offices
 
 
 @router.post("/appointments/slots")
 def create_appointment_slots(req: list[CreateAppSlots], db: Session = Depends(get_db)):
-    slots = []
+    try:
 
-    for item in req:
-        slots.append(AppointmentSchedule(**item.model_dump()))
+        for item in req:
+            stmt = insert(AppointmentSchedule).values(**item.model_dump())
+            on_duplicate_key_stmt = stmt.on_duplicate_key_update(**item.model_dump())
+            db.execute(on_duplicate_key_stmt)
 
-    db.bulk_save_objects(slots)
-    db.commit()
+        db.commit()
 
-    return slots
+        return {"status": "success"}
+
+    except Exception as e:
+        print(e)
+        return {"status": "failed"}
+
+
+@router.post("/users")
+def create_admin_user(req: CreateUser, db: Session = Depends(get_db)):
+    pass

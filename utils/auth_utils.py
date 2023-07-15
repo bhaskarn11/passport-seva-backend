@@ -1,6 +1,6 @@
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, SecurityScopes
 from datetime import datetime, timedelta
 from settings import get_settings
 from dependencies import get_db
@@ -8,9 +8,10 @@ from models import User
 from jwt import PyJWTError as JWTError
 import jwt
 from passlib.hash import pbkdf2_sha256
+from utils.user_scopes import USER_SCOPES
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login", scopes=USER_SCOPES)
 
 config = get_settings()
 
@@ -44,7 +45,12 @@ def decode_token():
     pass
 
 
-def read_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def read_current_user(security_scopes: SecurityScopes,token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    if security_scopes.scopes:
+        authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
+    else:
+        authenticate_value = "Bearer"
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -55,10 +61,19 @@ def read_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends
         username: str = payload.get("username")
         if username is None:
             raise credentials_exception
-
+        token_scopes = payload.get("scopes", [])
     except JWTError:
         raise credentials_exception
     user = get_user(username, db)
     if user is None:
         raise credentials_exception
+
+    for scope in security_scopes.scopes:
+        if scope not in token_scopes:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Not enough permissions",
+                headers={"WWW-Authenticate": authenticate_value},
+            )
+
     return user

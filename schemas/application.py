@@ -1,5 +1,9 @@
-from pydantic import BaseModel
+from pydantic import BaseModel as Base, ConfigDict
 from datetime import date
+
+
+class BaseModel(Base):
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PersonalDetails(BaseModel):
@@ -10,9 +14,6 @@ class PersonalDetails(BaseModel):
     mobile_number: str
     dob: date
 
-    class Config:
-        orm_mode = True
-
 
 class AddressDetails(BaseModel):
     house_street: str
@@ -22,9 +23,6 @@ class AddressDetails(BaseModel):
     district: str
     police_station: str
 
-    class Config:
-        orm_mode = True
-
 
 class FamilyDetails(BaseModel):
     father_name: str
@@ -32,21 +30,14 @@ class FamilyDetails(BaseModel):
     legal_guardian_name: str
     spouse_name: str
 
-    class Config:
-        orm_mode = True
-
 
 class PrevPspDetails(BaseModel):
     is_identity_cert_held: bool
     is_diplomatic_psp_held: bool
     applied_psp_before: bool
 
-    class Config:
-        orm_mode = True
-
 
 class ApplicationBase(BaseModel):
-    user_id: int
     name: str
     status: str
     application_type: str
@@ -55,14 +46,17 @@ class ApplicationBase(BaseModel):
     personal_details: PersonalDetails
     address_details: AddressDetails
     prev_psp_details: PrevPspDetails
-
-    class Config:
-        orm_mode = True
+    family_details: FamilyDetails
 
 
 class CreateApplication(ApplicationBase):
     pass
 
 
-class ApplicationResponse(CreateApplication):
-    pass
+class ApplicationResponse(ApplicationBase):
+    user_id: int
+
+
+class CreatePayment(BaseModel):
+    arn: str
+    fee: float

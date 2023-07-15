@@ -1,14 +1,15 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Security
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from settings import get_settings
-from services import application_service, user_service, appointment_service, rpo_service
+from services import application_service, user_service, appointment_service, admin_service, payment_service
 from schemas import CustomHTTPException
 from datetime import datetime
+from utils.auth_utils import read_current_user
 
 config = get_settings()
 
-app = FastAPI(version=config.version, title=config.app_name, description=config.app_description)
+app = FastAPI(version=config.version, title=config.app_name, description=config.app_description, docs_url="/")
 
 
 origins = [
@@ -34,19 +35,29 @@ app.include_router(
 app.include_router(
     application_service.router,
     prefix="/applications",
-    tags=['Applications Service']
+    tags=['Applications Service'],
+    dependencies=[Security(read_current_user, scopes=['application:read', 'application:write'])]
+
 )
 
 app.include_router(
     appointment_service.router,
     prefix="/appointments",
-    tags=['Appointment Service']
+    tags=['Public Service'],
 )
 
 app.include_router(
-    rpo_service.router,
-    prefix="/rpo",
-    tags=['RPO Service']
+    admin_service.router,
+    prefix="/admin",
+    tags=['Admin Service'],
+    # dependencies=[Security(read_current_user, scopes=['user:admin'])]
+)
+
+
+app.include_router(
+    payment_service.router,
+    prefix="/payment",
+    tags=['Payment Service']
 )
 
 

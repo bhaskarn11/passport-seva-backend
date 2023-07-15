@@ -1,9 +1,13 @@
-from datetime import datetime
-from pydantic import BaseModel
+from datetime import date
+from pydantic import BaseModel as Base, ConfigDict
+
+
+class BaseModel(Base):
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CreateAppointment(BaseModel):
-    date: datetime
+    date: date
     po_code: str
     arn: str
 
@@ -13,14 +17,14 @@ class UpdateAppointment(CreateAppointment):
 
 
 class GetAppointment(BaseModel):
-    date: datetime
+    date: date
     po_code: str
     rpo_name: str
     arn: str
 
 
 class AppDate(BaseModel):
-    date: datetime
+    date: date
     available: int
 
 
@@ -36,10 +40,7 @@ class CreateAppSlots(BaseModel):
     po_code: str
     scheme_type: str
     application_type: str
-    date: datetime
-
-    class Config:
-        orm_mode = True
+    date: date
 
 
 class PassportOfficeSchema(BaseModel):
