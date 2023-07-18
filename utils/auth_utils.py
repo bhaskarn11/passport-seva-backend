@@ -4,7 +4,7 @@ from fastapi.security import OAuth2PasswordBearer, SecurityScopes
 from datetime import datetime, timedelta
 from settings import get_settings
 from dependencies import get_db
-from models import User
+from models.user import User
 from jwt import PyJWTError as JWTError
 import jwt
 from passlib.hash import pbkdf2_sha256
@@ -45,7 +45,7 @@ def decode_token():
     pass
 
 
-def read_current_user(security_scopes: SecurityScopes,token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def read_current_user(security_scopes: SecurityScopes, token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     if security_scopes.scopes:
         authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
     else:

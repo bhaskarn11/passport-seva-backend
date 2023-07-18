@@ -1,10 +1,11 @@
 from fastapi import APIRouter
 
+
 router = APIRouter()
 
 
 @router.post("/init")
-def initiate_payment():
+def initiate_payment(arn):
     pass
 
 

@@ -6,21 +6,31 @@ class BaseModel(Base):
     model_config = ConfigDict(from_attributes=True)
 
 
-class CreateAppointment(BaseModel):
+class PassportOfficeSchema(BaseModel):
+    po_code: str
+    address: str
+    rpo: str
+    state: str
+    district: str
+    appointment_capacity: int
+
+
+class AppointmentBase(Base):
     date: date
     po_code: str
     arn: str
 
 
-class UpdateAppointment(CreateAppointment):
+class CreateAppointment(AppointmentBase):
     pass
 
 
-class GetAppointment(BaseModel):
-    date: date
-    po_code: str
-    rpo_name: str
-    arn: str
+class UpdateAppointment(AppointmentBase):
+    pass
+
+
+class AppointmentResponse(AppointmentBase):
+    passport_office: PassportOfficeSchema | None
 
 
 class AppDate(BaseModel):
@@ -43,10 +53,3 @@ class CreateAppSlots(BaseModel):
     date: date
 
 
-class PassportOfficeSchema(BaseModel):
-    po_code: str
-    address: str
-    rpo: str
-    state: str
-    district: str
-    appointment_capacity: int

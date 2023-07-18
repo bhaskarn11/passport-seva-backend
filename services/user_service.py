@@ -1,4 +1,5 @@
-from models import User, Application
+from models.user import User
+from models.application import Application
 from schemas.user import CreateUser, PasswordResetReq, UserResponse, Token, CurrentUserResponse
 from fastapi import APIRouter, Depends, HTTPException, status, Security
 from fastapi.security import OAuth2PasswordRequestForm
@@ -19,7 +20,7 @@ def create_user(req: CreateUser, db: Session = Depends(get_db)):
 
     try:
         hashed_pass = pbkdf2_sha256.hash(req.password)
-        scopes = "".join(req.scopes)
+        scopes = ",".join(req.scopes)
         user = User(first_name=req.first_name, last_name=req.last_name, scopes=scopes,
                     dob=req.dob, email=req.email, hashed_password=hashed_pass)
 
@@ -27,12 +28,14 @@ def create_user(req: CreateUser, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(user)
         return user
-    except Exception:
+    except Exception as e:
+        print(e)
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal Error occurred")
 
 
 @router.post("/login", response_model=Token)
 def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    print(form_data.username)
     user = authenticate_user(form_data.username, form_data.password, db)
     if not user:
         raise HTTPException(
@@ -73,7 +76,7 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
 
-@router.post("/password/reset", dependencies=[Security(read_current_user, scopes=['user:admin'])])
+@router.post("/password/reset", dependencies=[Security(read_current_user, scopes=['read', 'write'])])
 def reset_password(req: PasswordResetReq, db: Session = Depends(get_db)):
     user = db.query(User).where(User.email == req.email).first()
     if not user:
@@ -86,7 +89,7 @@ def reset_password(req: PasswordResetReq, db: Session = Depends(get_db)):
 
 
 @router.get("/{user_id}/applications",
-            dependencies=[Security(read_current_user, scopes=['application:read', 'application:write'])]
+            dependencies=[Security(read_current_user, scopes=['read', 'write'])]
             )
 def get_applications_by_user(user_id: int, limit: int = 10, db: Session = Depends(get_db)):
     apps = db.query(Application).where(Application.user_id == user_id).limit(limit).all()
@@ -94,7 +97,7 @@ def get_applications_by_user(user_id: int, limit: int = 10, db: Session = Depend
 
 
 @router.get("/{user_id}", response_model=UserResponse,
-            dependencies=[Security(read_current_user, scopes=['application:read', 'application:write'])]
+            dependencies=[Security(read_current_user, scopes=['read', 'write'])]
             )
 def get_user_details(user_id: int, db: Session = Depends(get_db)):
     user = db.query(User).where(User.id == user_id).first()
@@ -103,3 +106,23 @@ def get_user_details(user_id: int, db: Session = Depends(get_db)):
         raise CustomHTTPException("No user Found", status.HTTP_404_NOT_FOUND)
 
     return user
+
+
+@router.get("/check-username")
+def check_username(username: str, db: Session = Depends(get_db)):
+    try:
+        user = db.query(User).where(User.email == username).first()
+
+        if not user:
+            return {"username_available": True}
+
+        return {"username_available": False}
+
+    except Exception:
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal Server Error")
+
+
+@router.get("/{user_id}/appointments")
+def get_appointments_by_user(user_id: int):
+    pass
+

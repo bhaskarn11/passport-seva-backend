@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request, Security
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from settings import get_settings
-from services import application_service, user_service, appointment_service, admin_service, payment_service
+from services import application_service, user_service, public_service, admin_service, payment_service
 from schemas import CustomHTTPException
 from datetime import datetime
 from utils.auth_utils import read_current_user
@@ -36,13 +36,13 @@ app.include_router(
     application_service.router,
     prefix="/applications",
     tags=['Applications Service'],
-    dependencies=[Security(read_current_user, scopes=['application:read', 'application:write'])]
+    dependencies=[Security(read_current_user, scopes=['read', 'write'])]
 
 )
 
 app.include_router(
-    appointment_service.router,
-    prefix="/appointments",
+    public_service.router,
+    prefix="/public",
     tags=['Public Service'],
 )
 
@@ -57,7 +57,9 @@ app.include_router(
 app.include_router(
     payment_service.router,
     prefix="/payment",
-    tags=['Payment Service']
+    tags=['Payment Service'],
+    dependencies=[Security(read_current_user, scopes=['read', 'write'])]
+
 )
 
 

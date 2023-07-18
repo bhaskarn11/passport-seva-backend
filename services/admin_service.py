@@ -2,17 +2,11 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from schemas.appointment import CreateAppSlots, PassportOfficeSchema
 from schemas.user import CreateUser
-from models import PassportOffice, AppointmentSchedule
+from models.appointment import PassportOffice, AppointmentSchedule
 from dependencies import get_db
 from sqlalchemy.dialects.mysql import insert
 
 router = APIRouter()
-
-
-@router.get("/psp-offices")
-def get_passport_offices(rpo_name: str, db: Session = Depends(get_db)):
-    offices = db.query(PassportOffice).where(PassportOffice.rpo == rpo_name).all()
-    return offices
 
 
 @router.post("/psp-offices")

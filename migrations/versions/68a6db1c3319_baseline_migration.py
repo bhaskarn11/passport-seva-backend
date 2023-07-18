@@ -1,8 +1,8 @@
-"""Create basline tables
+"""baseline migration
 
-Revision ID: 22b82da2e2f2
+Revision ID: 68a6db1c3319
 Revises: 
-Create Date: 2023-07-12 21:15:01.504095
+Create Date: 2023-07-18 19:18:54.656227
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '22b82da2e2f2'
+revision = '68a6db1c3319'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -27,7 +27,8 @@ def upgrade() -> None:
     sa.Column('appointment_capacity', sa.Integer(), nullable=True),
     sa.PrimaryKeyConstraint('po_code')
     )
-    op.create_index(op.f('ix_passport_offices_po_code'), 'passport_offices', ['po_code'], unique=True)
+    op.create_index(op.f('ix_passport_offices_po_code'), 'passport_offices', ['po_code'], unique=False)
+    op.create_index(op.f('ix_passport_offices_rpo'), 'passport_offices', ['rpo'], unique=False)
     op.create_table('users',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('first_name', sa.String(length=50), nullable=True),
@@ -36,7 +37,8 @@ def upgrade() -> None:
     sa.Column('is_email_verified', sa.Boolean(), nullable=True),
     sa.Column('hashed_password', sa.String(length=100), nullable=True),
     sa.Column('dob', sa.Date(), nullable=True),
-    sa.Column('role', sa.String(length=20), nullable=True),
+    sa.Column('scopes', sa.String(length=50), nullable=True),
+    sa.Column('disabled', sa.Boolean(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
@@ -48,10 +50,12 @@ def upgrade() -> None:
     sa.Column('first_name', sa.String(length=50), nullable=True),
     sa.Column('last_name', sa.String(length=50), nullable=True),
     sa.Column('gender', sa.String(length=20), nullable=True),
+    sa.Column('marital_status', sa.String(length=20), nullable=True),
     sa.Column('email', sa.String(length=50), nullable=True),
     sa.Column('mobile_number', sa.String(length=20), nullable=True),
+    sa.Column('dob', sa.Date(), nullable=True),
     sa.Column('submitted_at', sa.Date(), nullable=True),
-    sa.Column('name', sa.String(length=40), nullable=True),
+    sa.Column('app_name', sa.String(length=40), nullable=True),
     sa.Column('status', sa.String(length=30), nullable=True),
     sa.Column('application_type', sa.String(length=20), nullable=True),
     sa.Column('scheme_type', sa.String(length=20), nullable=True),
@@ -72,12 +76,13 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('po_code', 'scheme_type', 'application_type')
     )
     op.create_index(op.f('ix_appointment_schedules_application_type'), 'appointment_schedules', ['application_type'], unique=False)
+    op.create_index(op.f('ix_appointment_schedules_date'), 'appointment_schedules', ['date'], unique=False)
     op.create_index(op.f('ix_appointment_schedules_po_code'), 'appointment_schedules', ['po_code'], unique=False)
     op.create_index(op.f('ix_appointment_schedules_scheme_type'), 'appointment_schedules', ['scheme_type'], unique=False)
     op.create_table('applicant_addresses',
     sa.Column('arn', sa.String(length=30), nullable=False),
-    sa.Column('house_treet', sa.String(length=50), nullable=True),
-    sa.Column('city_ame', sa.String(length=50), nullable=True),
+    sa.Column('house_street', sa.String(length=50), nullable=True),
+    sa.Column('city_name', sa.String(length=50), nullable=True),
     sa.Column('pin_code', sa.String(length=20), nullable=True),
     sa.Column('state', sa.String(length=30), nullable=True),
     sa.Column('district', sa.String(length=30), nullable=True),
@@ -86,7 +91,7 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('arn')
     )
     op.create_table('applicant_family',
-    sa.Column('arn', sa.String(length=30), nullable=False),
+    sa.Column('arn', sa.String(length=30), autoincrement=False, nullable=False),
     sa.Column('father_name', sa.String(length=50), nullable=True),
     sa.Column('mother_name', sa.String(length=50), nullable=True),
     sa.Column('legal_guardian_name', sa.String(length=50), nullable=True),
@@ -105,8 +110,19 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_appointments_id'), 'appointments', ['id'], unique=False)
+    op.create_table('payment_details',
+    sa.Column('order_id', sa.String(length=30), nullable=True),
+    sa.Column('payment_id', sa.String(length=30), nullable=True),
+    sa.Column('arn', sa.String(length=30), autoincrement=False, nullable=False),
+    sa.Column('date', sa.Date(), nullable=True),
+    sa.Column('payment_gateway', sa.String(length=30), nullable=True),
+    sa.ForeignKeyConstraint(['arn'], ['applications.arn'], ),
+    sa.PrimaryKeyConstraint('arn'),
+    sa.UniqueConstraint('order_id'),
+    sa.UniqueConstraint('payment_id')
+    )
     op.create_table('prev_psp_details',
-    sa.Column('arn', sa.String(length=30), nullable=False),
+    sa.Column('arn', sa.String(length=30), autoincrement=False, nullable=False),
     sa.Column('is_identity_cert_held', sa.Boolean(), nullable=True),
     sa.Column('is_diplomatic_psp_held', sa.Boolean(), nullable=True),
     sa.Column('applied_psp_before', sa.Boolean(), nullable=True),
@@ -119,12 +135,14 @@ def upgrade() -> None:
 def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
     op.drop_table('prev_psp_details')
+    op.drop_table('payment_details')
     op.drop_index(op.f('ix_appointments_id'), table_name='appointments')
     op.drop_table('appointments')
     op.drop_table('applicant_family')
     op.drop_table('applicant_addresses')
     op.drop_index(op.f('ix_appointment_schedules_scheme_type'), table_name='appointment_schedules')
     op.drop_index(op.f('ix_appointment_schedules_po_code'), table_name='appointment_schedules')
+    op.drop_index(op.f('ix_appointment_schedules_date'), table_name='appointment_schedules')
     op.drop_index(op.f('ix_appointment_schedules_application_type'), table_name='appointment_schedules')
     op.drop_table('appointment_schedules')
     op.drop_index(op.f('ix_applications_id'), table_name='applications')
@@ -133,6 +151,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_users_id'), table_name='users')
     op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')
+    op.drop_index(op.f('ix_passport_offices_rpo'), table_name='passport_offices')
     op.drop_index(op.f('ix_passport_offices_po_code'), table_name='passport_offices')
     op.drop_table('passport_offices')
     # ### end Alembic commands ###
